@@ -3,9 +3,6 @@
 
 #include "mapper.h"
 
-Serial pc(USBTX, USBRX);
-
-// Serial pc(USBTX, USBRX);
 
 Mapper::Mapper():
 _wheel_l(MOTOR_PWM_LEFT, MOTOR_FWD_LEFT, MOTOR_REV_LEFT),
@@ -170,16 +167,18 @@ void Mapper::calibrate_right_wheel() {
 }
 
 void Mapper::init_state() {
+    target_speed = 0;
+    target_theta = M_PI / 2;
     state.x = 0;
     state.y = 0;
-    state.lv = 0;
-    state.rv = 0;
-    state.theta = M_PI / 2;
+    state.lv = target_speed;
+    state.rv = target_speed;
+    state.theta = target_theta;
+    _init_pid(target_speed);
 }
 
 void Mapper::start_state_update(float dt) {
     _dt = dt;
-    _init_pid(target_speed);
     init_state();
     _update_poll.attach<Mapper, void(Mapper::*)()>(this, &Mapper::_update_state, _dt);
 }
@@ -213,14 +212,8 @@ void Mapper::_init_pid(int32_t speed) {
     if (_pid != NULL) {
         delete _pid;
     }
-    if (speed == 0) {
-        /*               s,  mm/s,  mm/s,  (mm/s)/rad  , (mm/s)/(rad/s),  (mm/s)/(rad*s)   */
-        _pid = new PID(_dt,  1500, -1500,   1750 / M_PI,    75 / M_PI  ,     50 /  M_PI);  // Works well at 0 mm/s with differential offsets
-    } else if (speed < 100) {
-        _pid = new PID(_dt,  1000, -1000,    500 / M_PI,   100 / M_PI  ,     50 / M_PI);  // Works well at 50 mm/s (good for turning while moving forward)
-    } else {
-        _pid = new PID(_dt,  1000, -1000,    800 / M_PI,     20 / M_PI ,     50 / M_PI);  // Works well at 200 mm/s
-    }
+    /*               s,  mm/s,  mm/s,  (mm/s)/rad  , (mm/s)/(rad/s),  (mm/s)/(rad*s)   */
+    _pid = new PID(_dt,   800,  -800,    800 / M_PI,    20 / M_PI  ,    400 /  M_PI);
 }
 
 void Mapper::_update_control(int32_t *_lv_diff, int32_t *_rv_diff) {
@@ -239,7 +232,10 @@ void Mapper::_update_control(int32_t *_lv_diff, int32_t *_rv_diff) {
             _pwm_l = -_pwm_l;
             _pwm_r = -_pwm_r;
         }
-        _init_pid(target_speed);
+        _init_pid(target_speed);  // Maybe don't need to reset PID anymore
+                                  // Initially because of different PIDs for
+                                  // different speeds.  Just doing it now to
+                                  // clear the integral.
         last_speed = target_speed;
     }
 

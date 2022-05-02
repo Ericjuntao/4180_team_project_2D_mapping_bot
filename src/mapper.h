@@ -106,13 +106,23 @@ public:
     float target_theta = M_PI / 2;
     State state;
     bool control = true;  // Whether the robot tries to correct theta and speed
+    // PWM speed map variables
+    std::map<float, int32_t> _pwm_speed_map_l;
+    std::map<float, int32_t> _pwm_speed_map_r;
+    float _pwm_speed_m_l;
+    float _pwm_speed_b_l;
+    float _pwm_speed_m_r;
+    float _pwm_speed_b_r;
+    int32_t _v_off = 0;
+    float _pwm_add_l = 0;
+    float _pwm_add_r = 0;
 private:
     float _dt = 0;  // Time change between updates in seconds
     uint32_t _wheel_sep = 163;  // Separation between center of wheels in mm
     float _wheel_circ = 230.0;  // Wheel circumference in mm
     float _encoder_cpr = 360.0;  // Encoder count per rotation
     int32_t _soff_x_l = -65;  // Offset of sensors from center of robot in mm
-    int32_t _soff_y_l = 40;  // Offset of sensors from center of robot in mm
+    int32_t _soff_y_l = 40;
     int32_t _soff_x_c = 0;
     int32_t _soff_y_c = 80;
     int32_t _soff_x_r = 65;
@@ -133,16 +143,6 @@ private:
     uint32_t _map_thresh_mm = 500;  // Objects must be this close to be mapped
     Ticker _update_poll;
     PID *_pid = NULL;
-    // PWM speed map variables
-    std::map<float, int32_t> _pwm_speed_map_l;
-    std::map<float, int32_t> _pwm_speed_map_r;
-    float _pwm_speed_m_l;
-    float _pwm_speed_b_l;
-    float _pwm_speed_m_r;
-    float _pwm_speed_b_r;
-    int32_t _v_off = 0;
-    float _pwm_add_l = 0;
-    float _pwm_add_r = 0;
 
     void _update_state();
     void _update_control(int32_t *_lv_diff, int32_t *_rv_diff);
